@@ -1,0 +1,73 @@
+Operating Systems Assignment 10
+Memory Management and Page Replacement
+
+Implementation
+
+This assignment adds tools to inspect physical memory and the page tables in xv6.
+It also includes a program that compares three page replacement methods.
+
+For physical memory tracking, kalloc.c keeps counts of pages allocated, pages
+freed, and pages currently in use. It also keeps the number of pages on the
+free list. The memstats system call prints these values. The memtest program
+asks sbrk for three pages and writes to each one. The writes make xv6 create
+physical pages for the reserved memory. The program prints the memory counts,
+releases the pages with sbrk, and prints the counts again.
+
+For address translation, vtop checks the current process page table. If the
+address has a present user page, it combines the physical page address with
+the offset within that page. It returns -1 when the address is not mapped.
+The vttest program checks addresses in pages that have been used, a reserved
+but untouched page, and an address outside the process.
+
+For page information, pageinfo checks the page table and prints the physical
+frame number and the P, W, and U flags. P means present, W means writable,
+and U means available to user programs. setreadonly clears the W flag and
+reloads the active page table so the processor uses the new permission.
+pagetest shows the page information before and after the change. It then
+starts a child process that tries to write to the protected page. The child
+gets a page fault, while the parent remains alive to report the result.
+
+The new system calls are connected through the system call number list,
+kernel dispatch table, assembly stubs, and user and kernel declarations.
+The Makefile also includes all four test programs in the xv6 file system.
+
+Page Replacement Methods
+
+pagereplace uses this reference string:
+7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1
+
+FIFO replaces the page that has been in memory the longest. LRU replaces the
+page that has not been used for the longest time. Optimal replaces the page
+whose next use is farthest in the future. For each reference, the program
+prints the frame contents and marks the result as a hit or a fault. A hit
+means the requested page is already in a frame. A fault means it must be
+loaded into a frame.
+
+Results
+
+Frames  Method   Faults  Hits  Hit ratio  Fault ratio
+3       FIFO       15      5       25%          75%
+3       LRU        12      8       40%          60%
+3       Optimal     9     11       55%          45%
+4       FIFO       10     10       50%          50%
+4       LRU         8     12       60%          40%
+4       Optimal     8     12       60%          40%
+5       FIFO        9     11       55%          45%
+5       LRU         7     13       65%          35%
+5       Optimal     7     13       65%          35%
+
+Observations
+
+The memory test showed that allocating and touching three pages increased
+the number of pages in use by three. Releasing the memory increased the
+free-page count by three. Exact totals can vary because xv6 uses pages for
+other tasks while it runs.
+
+The translation test returned physical addresses for mapped pages and -1
+for unmapped addresses. The protection test showed W=1 before protection and
+W=0 after protection. Its child process then faulted when it tried to write.
+
+For this reference string, Optimal had the fewest faults with three frames.
+With four and five frames, Optimal tied LRU. FIFO had more faults than the
+other methods in each of these tests. The hit and fault ratios are the counts
+divided by the 20 references.
